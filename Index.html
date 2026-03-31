@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FoundIt! — Admin Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-found">Found</span><span class="logo-it">It!</span>
+      <span class="logo-badge">Admin</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li><a href="#" class="nav-item active" data-section="dashboard">
+          <i class="ri-dashboard-line"></i><span>Dashboard</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-section="posts">
+          <i class="ri-file-list-3-line"></i><span>Posts</span>
+          <span class="nav-badge" id="nav-badge-posts">0</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-section="users">
+          <i class="ri-group-line"></i><span>Users</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-section="reports">
+          <i class="ri-flag-line"></i><span>Reports</span>
+          <span class="nav-badge danger" id="nav-badge-reports">0</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-section="logs">
+          <i class="ri-history-line"></i><span>Activity Logs</span>
+        </a></li>
+        <li><a href="#" class="nav-item" data-section="settings">
+          <i class="ri-settings-3-line"></i><span>Settings</span>
+        </a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="admin-avatar">
+        <i class="ri-shield-user-fill"></i>
+      </div>
+      <div class="admin-info">
+        <p class="admin-name">Admin</p>
+        <p class="admin-role">Super Administrator</p>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrapper">
+
+    <header class="topbar">
+      <button class="sidebar-toggle" id="sidebarToggle"><i class="ri-menu-line"></i></button>
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="topbar-right">
+        <button class="topbar-btn notif-btn" id="notifBtn" title="Notifications">
+          <i class="ri-notification-3-line"></i>
+          <span class="notif-dot" id="notifDot"></span>
+        </button>
+        <button class="topbar-btn" title="Refresh" onclick="App.refresh()"><i class="ri-refresh-line"></i></button>
+      </div>
+    </header>
+
+    <div class="notif-panel" id="notifPanel">
+      <div class="notif-header">
+        <span>Notifications</span>
+        <button onclick="App.clearNotifications()">Clear all</button>
+      </div>
+      <ul class="notif-list" id="notifList"></ul>
+    </div>
+
+    <main class="content" id="mainContent">
+
+      <section class="section active" id="section-dashboard">
+        <div class="section-header-row">
+          <div>
+            <p class="section-label">Overview</p>
+            <h1 class="section-title">Dashboard</h1>
+          </div>
+          <span class="date-display" id="dateDisplay"></span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card lost">
+            <div class="stat-icon"><i class="ri-search-eye-line"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Lost Items</p>
+              <p class="stat-value" id="stat-lost">0</p>
+              <p class="stat-sub">Awaiting recovery</p>
+            </div>
+          </div>
+          <div class="stat-card found">
+            <div class="stat-icon"><i class="ri-map-pin-2-line"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Found Items</p>
+              <p class="stat-value" id="stat-found">0</p>
+              <p class="stat-sub">Awaiting owners</p>
+            </div>
+          </div>
+          <div class="stat-card claimed">
+            <div class="stat-icon"><i class="ri-checkbox-circle-line"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Claimed</p>
+              <p class="stat-value" id="stat-claimed">0</p>
+              <p class="stat-sub">Successfully returned</p>
+            </div>
+          </div>
+          <div class="stat-card users">
+            <div class="stat-icon"><i class="ri-group-line"></i></div>
+            <div class="stat-info">
+              <p class="stat-label">Active Users</p>
+              <p class="stat-value" id="stat-users">0</p>
+              <p class="stat-sub">Registered accounts</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Item Status Overview</h3>
+              <span class="card-badge">This Month</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="statusChart"></canvas>
+              <div class="chart-legend" id="chartLegend"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Recent Activity</h3>
+              <a href="#" class="card-link" data-section="logs">View All</a>
+            </div>
+            <ul class="activity-list" id="dashActivityList"></ul>
+          </div>
+        </div>
+
+        <!-- RECENT POSTS TABLE -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Recent Posts</h3>
+            <a href="#" class="card-link" data-section="posts">View All</a>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="dashPostsTable">
+              <thead>
+                <tr>
+                  <th>Item</th><th>Category</th><th>Status</th><th>Location</th><th>Date</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-posts">
+        <div class="section-header-row">
+          <div>
+            <p class="section-label">Management</p>
+            <h1 class="section-title">Posts</h1>
+          </div>
+          <button class="btn-primary" onclick="PostsManager.openAddModal()">
+            <i class="ri-add-line"></i> Add Post
+          </button>
+        </div>
+
+        <div class="filters-bar">
+          <div class="search-wrap">
+            <i class="ri-search-line"></i>
+            <input type="text" id="postsSearch" placeholder="Search by title, description, location…" oninput="PostsManager.applyFilters()" />
+          </div>
+          <div class="filter-group">
+            <select id="filterStatus" onchange="PostsManager.applyFilters()">
+              <option value="">All Status</option>
+              <option value="lost">Lost</option>
+              <option value="found">Found</option>
+              <option value="claimed">Claimed</option>
+              <option value="pending">Pending</option>
+            </select>
+            <select id="filterCategory" onchange="PostsManager.applyFilters()">
+              <option value="">All Categories</option>
+              <option value="electronics">Electronics</option>
+              <option value="clothing">Clothing</option>
+              <option value="accessories">Accessories</option>
+              <option value="documents">Documents</option>
+              <option value="keys">Keys</option>
+              <option value="bags">Bags</option>
+              <option value="other">Other</option>
+            </select>
+            <select id="filterLocation" onchange="PostsManager.applyFilters()">
+              <option value="">All Locations</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="tab-row">
+          <button class="tab active" data-tab="all" onclick="PostsManager.setTab(this)">All</button>
+          <button class="tab" data-tab="lost" onclick="PostsManager.setTab(this)">Lost</button>
+          <button class="tab" data-tab="found" onclick="PostsManager.setTab(this)">Found</button>
+          <button class="tab" data-tab="claimed" onclick="PostsManager.setTab(this)">Claimed</button>
+          <button class="tab" data-tab="pending" onclick="PostsManager.setTab(this)">Pending</button>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table" id="postsTable">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="selectAll" onchange="PostsManager.toggleSelectAll(this)" /></th>
+                  <th>Item</th><th>Category</th><th>Status</th><th>Location</th><th>Reported By</th><th>Claim Code</th><th>Date</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="bulk-bar" id="bulkBar">
+            <span id="bulkCount">0 selected</span>
+            <button class="btn-sm btn-danger" onclick="PostsManager.bulkDelete()"><i class="ri-delete-bin-line"></i> Delete Selected</button>
+            <button class="btn-sm btn-outline" onclick="PostsManager.bulkMarkClaimed()"><i class="ri-checkbox-circle-line"></i> Mark Claimed</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-users">
+        <div class="section-header-row">
+          <div>
+            <p class="section-label">Management</p>
+            <h1 class="section-title">Users</h1>
+          </div>
+        </div>
+
+        <div class="filters-bar">
+          <div class="search-wrap">
+            <i class="ri-search-line"></i>
+            <input type="text" id="usersSearch" placeholder="Search users by name or email…" oninput="UsersManager.applyFilters()" />
+          </div>
+          <select id="filterUserStatus" onchange="UsersManager.applyFilters()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="banned">Banned</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table" id="usersTable">
+              <thead>
+                <tr>
+                  <th>User</th><th>Email</th><th>Posts</th><th>Claims</th><th>Joined</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-reports">
+        <div class="section-header-row">
+          <div>
+            <p class="section-label">Moderation</p>
+            <h1 class="section-title">Reports</h1>
+          </div>
+        </div>
+
+        <div class="filters-bar">
+          <div class="search-wrap">
+            <i class="ri-search-line"></i>
+            <input type="text" id="reportsSearch" placeholder="Search reports…" oninput="ReportsManager.applyFilters()" />
+          </div>
+          <select id="filterReportStatus" onchange="ReportsManager.applyFilters()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+            <option value="ignored">Ignored</option>
+          </select>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table" id="reportsTable">
+              <thead>
+                <tr>
+                  <th>Post</th><th>Reported By</th><th>Reason</th><th>Date</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="section-logs">
+        <div class="section-header-row">
+          <div>
+            <p class="section-label">Audit</p>
+            <h1 class="section-title">Activity Logs</h1>
+          </div>
+          <button class="btn-outline btn-sm" onclick="LogsManager.clearLogs()">
+            <i class="ri-delete-bin-line"></i> Clear Logs
+          </button>
+        </div>
+
+        <div class="card">
+          <div class="log-list" id="logList"></div>
+        </div>
+      </section>
+
+      <section class="section" id="section-settings">
+        <div class="section-header-row">
+          <div>
+            <p class="section-label">Configuration</p>
+            <h1 class="section-title">Settings</h1>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="card settings-card">
+            <h3 class="settings-group-title"><i class="ri-shield-check-line"></i> Claim Verification</h3>
+            <p class="settings-desc">Verify an item claim by entering the unique claim code provided to the user.</p>
+            <div class="form-group">
+              <label>Claim Code</label>
+              <div class="input-row">
+                <input type="text" id="claimCodeInput" placeholder="e.g. FI-A1B2-C3D4" />
+                <button class="btn-primary" onclick="Settings.verifyClaim()">Verify</button>
+              </div>
+            </div>
+            <div class="claim-result" id="claimResult"></div>
+          </div>
+
+          <div class="card settings-card">
+            <h3 class="settings-group-title"><i class="ri-notification-3-line"></i> Notification Preferences</h3>
+            <p class="settings-desc">Configure when you receive admin notifications.</p>
+            <div class="toggle-group">
+              <div class="toggle-item">
+                <div>
+                  <p class="toggle-label">New item posted</p>
+                  <p class="toggle-sub">Alert when a user submits a new post</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notifNewPost" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <p class="toggle-label">Claim request submitted</p>
+                  <p class="toggle-sub">Alert when a user initiates a claim</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notifClaim" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-item">
+                <div>
+                  <p class="toggle-label">New report filed</p>
+                  <p class="toggle-sub">Alert when a post is reported</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="notifReport" checked />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <h3 class="settings-group-title"><i class="ri-database-2-line"></i> Data Management</h3>
+            <p class="settings-desc">Reset or restore dummy data for development purposes.</p>
+            <div class="settings-actions">
+              <button class="btn-outline btn-sm" onclick="Settings.resetData()"><i class="ri-refresh-line"></i> Reset to Default Data</button>
+              <button class="btn-danger btn-sm" onclick="Settings.clearAllData()"><i class="ri-delete-bin-line"></i> Clear All Data</button>
+            </div>
+          </div>
+
+          <div class="card settings-card">
+            <h3 class="settings-group-title"><i class="ri-building-line"></i> Campus Locations</h3>
+            <p class="settings-desc">Manage campus building locations available for posts.</p>
+            <div class="location-list" id="locationList"></div>
+            <div class="input-row" style="margin-top:12px;">
+              <input type="text" id="newLocationInput" placeholder="Add new location…" />
+              <button class="btn-primary btn-sm" onclick="Settings.addLocation()">Add</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <div class="modal-overlay" id="postModal" style="display:none;">
+    <div class="modal">
+      <button class="modal-close" onclick="PostsManager.closeModal()"><i class="ri-close-line"></i></button>
+      <h2 class="modal-title" id="postModalTitle">Edit Post</h2>
+      <form id="postForm" onsubmit="PostsManager.savePost(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Title *</label>
+            <input type="text" id="pTitle" required placeholder="e.g. Lost Keys" />
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="pCategory" required>
+              <option value="">Select category</option>
+              <option value="electronics">Electronics</option>
+              <option value="clothing">Clothing</option>
+              <option value="accessories">Accessories</option>
+              <option value="documents">Documents</option>
+              <option value="keys">Keys</option>
+              <option value="bags">Bags</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea id="pDescription" rows="3" required placeholder="Describe the item…"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status *</label>
+            <select id="pStatus" required>
+              <option value="lost">Lost</option>
+              <option value="found">Found</option>
+              <option value="claimed">Claimed</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Location *</label>
+            <select id="pLocation" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Date *</label>
+            <input type="date" id="pDate" required />
+          </div>
+          <div class="form-group">
+            <label>Reported By</label>
+            <input type="text" id="pReportedBy" placeholder="User name" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Image URL</label>
+          <input type="text" id="pImage" placeholder="https://…" />
+        </div>
+        <input type="hidden" id="pId" />
+        <div class="modal-footer">
+          <button type="button" class="btn-outline" onclick="PostsManager.closeModal()">Cancel</button>
+          <button type="submit" class="btn-primary">Save Post</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="viewPostModal" style="display:none;">
+    <div class="modal modal-wide">
+      <button class="modal-close" onclick="PostsManager.closeViewModal()"><i class="ri-close-line"></i></button>
+      <div id="viewPostContent"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="userModal" style="display:none;">
+    <div class="modal">
+      <button class="modal-close" onclick="UsersManager.closeModal()"><i class="ri-close-line"></i></button>
+      <h2 class="modal-title" id="userModalTitle">User Details</h2>
+      <div id="userModalContent"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal" style="display:none;">
+    <div class="modal modal-sm">
+      <h2 class="modal-title" id="confirmTitle">Confirm Action</h2>
+      <p id="confirmMessage" class="confirm-msg"></p>
+      <div class="modal-footer">
+        <button class="btn-outline" onclick="App.closeConfirm()">Cancel</button>
+        <button class="btn-danger" id="confirmBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
