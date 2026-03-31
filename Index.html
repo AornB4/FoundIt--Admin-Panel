@@ -32,9 +32,6 @@
           <i class="ri-flag-line"></i><span>Reports</span>
           <span class="nav-badge danger" id="nav-badge-reports">0</span>
         </a></li>
-        <li><a href="#" class="nav-item" data-section="logs">
-          <i class="ri-history-line"></i><span>Activity Logs</span>
-        </a></li>
         <li><a href="#" class="nav-item" data-section="settings">
           <i class="ri-settings-3-line"></i><span>Settings</span>
         </a></li>
@@ -48,6 +45,9 @@
       <div class="admin-info">
         <p class="admin-name">Admin</p>
         <p class="admin-role">Super Administrator</p>
+        <button class="sidebar-logout" onclick="AdminSession.logout()">
+          <i class="ri-logout-box-r-line"></i><span>Logout</span>
+        </button>
       </div>
     </div>
   </aside>
@@ -135,7 +135,6 @@
           <div class="card">
             <div class="card-header">
               <h3>Recent Activity</h3>
-              <a href="#" class="card-link" data-section="logs">View All</a>
             </div>
             <ul class="activity-list" id="dashActivityList"></ul>
           </div>
@@ -166,9 +165,14 @@
             <p class="section-label">Management</p>
             <h1 class="section-title">Posts</h1>
           </div>
-          <button class="btn-primary" onclick="PostsManager.openAddModal()">
-            <i class="ri-add-line"></i> Add Post
-          </button>
+          <div class="section-actions">
+            <button class="btn-outline" onclick="PostsManager.openClaimCodeModal()">
+              <i class="ri-shield-check-line"></i> Claim Code
+            </button>
+            <button class="btn-primary" onclick="PostsManager.openAddModal()">
+              <i class="ri-add-line"></i> Add Post
+            </button>
+          </div>
         </div>
 
         <div class="filters-bar">
@@ -182,7 +186,6 @@
               <option value="lost">Lost</option>
               <option value="found">Found</option>
               <option value="claimed">Claimed</option>
-              <option value="pending">Pending</option>
             </select>
             <select id="filterCategory" onchange="PostsManager.applyFilters()">
               <option value="">All Categories</option>
@@ -205,7 +208,6 @@
           <button class="tab" data-tab="lost" onclick="PostsManager.setTab(this)">Lost</button>
           <button class="tab" data-tab="found" onclick="PostsManager.setTab(this)">Found</button>
           <button class="tab" data-tab="claimed" onclick="PostsManager.setTab(this)">Claimed</button>
-          <button class="tab" data-tab="pending" onclick="PostsManager.setTab(this)">Pending</button>
         </div>
 
         <div class="card">
@@ -298,22 +300,6 @@
         </div>
       </section>
 
-      <section class="section" id="section-logs">
-        <div class="section-header-row">
-          <div>
-            <p class="section-label">Audit</p>
-            <h1 class="section-title">Activity Logs</h1>
-          </div>
-          <button class="btn-outline btn-sm" onclick="LogsManager.clearLogs()">
-            <i class="ri-delete-bin-line"></i> Clear Logs
-          </button>
-        </div>
-
-        <div class="card">
-          <div class="log-list" id="logList"></div>
-        </div>
-      </section>
-
       <section class="section" id="section-settings">
         <div class="section-header-row">
           <div>
@@ -323,19 +309,6 @@
         </div>
 
         <div class="settings-grid">
-          <div class="card settings-card">
-            <h3 class="settings-group-title"><i class="ri-shield-check-line"></i> Claim Verification</h3>
-            <p class="settings-desc">Verify an item claim by entering the unique claim code provided to the user.</p>
-            <div class="form-group">
-              <label>Claim Code</label>
-              <div class="input-row">
-                <input type="text" id="claimCodeInput" placeholder="e.g. FI-A1B2-C3D4" />
-                <button class="btn-primary" onclick="Settings.verifyClaim()">Verify</button>
-              </div>
-            </div>
-            <div class="claim-result" id="claimResult"></div>
-          </div>
-
           <div class="card settings-card">
             <h3 class="settings-group-title"><i class="ri-notification-3-line"></i> Notification Preferences</h3>
             <p class="settings-desc">Configure when you receive admin notifications.</p>
@@ -381,16 +354,6 @@
               <button class="btn-danger btn-sm" onclick="Settings.clearAllData()"><i class="ri-delete-bin-line"></i> Clear All Data</button>
             </div>
           </div>
-
-          <div class="card settings-card">
-            <h3 class="settings-group-title"><i class="ri-building-line"></i> Campus Locations</h3>
-            <p class="settings-desc">Manage campus building locations available for posts.</p>
-            <div class="location-list" id="locationList"></div>
-            <div class="input-row" style="margin-top:12px;">
-              <input type="text" id="newLocationInput" placeholder="Add new location…" />
-              <button class="btn-primary btn-sm" onclick="Settings.addLocation()">Add</button>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -432,7 +395,6 @@
               <option value="lost">Lost</option>
               <option value="found">Found</option>
               <option value="claimed">Claimed</option>
-              <option value="pending">Pending</option>
             </select>
           </div>
           <div class="form-group">
@@ -470,6 +432,22 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="claimCodeModal" style="display:none;">
+    <div class="modal">
+      <button class="modal-close" onclick="PostsManager.closeClaimCodeModal()"><i class="ri-close-line"></i></button>
+      <h2 class="modal-title">Claim Verification</h2>
+      <p class="settings-desc">Verify an item claim by entering the unique claim code provided to the user.</p>
+      <div class="form-group">
+        <label>Claim Code</label>
+        <div class="input-row">
+          <input type="text" id="claimCodeInput" placeholder="e.g. FI-A1B2-C3D4" />
+          <button class="btn-primary" onclick="Settings.verifyClaim()">Verify</button>
+        </div>
+      </div>
+      <div class="claim-result" id="claimResult"></div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="userModal" style="display:none;">
     <div class="modal">
       <button class="modal-close" onclick="UsersManager.closeModal()"><i class="ri-close-line"></i></button>
@@ -486,6 +464,18 @@
         <button class="btn-outline" onclick="App.closeConfirm()">Cancel</button>
         <button class="btn-danger" id="confirmBtn">Confirm</button>
       </div>
+    </div>
+  </div>
+
+  <div class="session-screen" id="sessionScreen" hidden>
+    <div class="session-card">
+      <div class="session-icon"><i class="ri-shield-user-line"></i></div>
+      <p class="section-label">Admin Session</p>
+      <h1 class="section-title">You are logged out</h1>
+      <p class="settings-desc">This prototype uses a local session lock. Click below to reopen the admin panel.</p>
+      <button class="btn-primary" onclick="AdminSession.activate()">
+        <i class="ri-login-box-line"></i> Return to Admin
+      </button>
     </div>
   </div>
 

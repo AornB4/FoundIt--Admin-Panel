@@ -14,6 +14,8 @@ const STORAGE_KEYS = {
   LOCATIONS: 'foundit_admin_locations',
 };
 
+const SESSION_KEY = 'foundit_admin_session_active';
+
 const DEFAULT_LOCATIONS = [
   'MPG Building', 'Old Canteen', 'Library', 'Cafeteria',
   'Gym', 'Parking Lot A', 'Science Block', 'Admin Office',
@@ -56,6 +58,14 @@ function timeAgo(isoStr) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function normalizePostStatus(status) {
+  return status === 'pending' ? 'lost' : (status || 'lost');
+}
+
+function normalizePosts(posts = []) {
+  return posts.map(post => ({ ...post, status: normalizePostStatus(post.status) }));
+}
+
 // Default dummy data
 const DEFAULT_POSTS = [
   { id: 'item_001', title: 'Lost Keys', category: 'keys', description: 'Silver key ring with a blue keychain. Found near the main entrance.', status: 'lost', location: 'MPG Building', reportedBy: 'Juan Dela Cruz', date: '2026-03-28', image: '', claimCode: 'FI-XKBD-7N2P', createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
@@ -67,7 +77,7 @@ const DEFAULT_POSTS = [
   { id: 'item_007', title: 'Camera', category: 'electronics', description: 'Canon EOS M50 mirrorless camera, black body.', status: 'claimed', location: 'Old Canteen', reportedBy: 'Jose Villanueva', date: '2026-03-22', image: '', claimCode: 'FI-CAM7-WXYZ', createdAt: new Date(Date.now() - 3600000 * 48).toISOString() },
   { id: 'item_008', title: 'Samsung Galaxy Buds', category: 'electronics', description: 'White Galaxy Buds+ with case, found near cafeteria seats.', status: 'found', location: 'Cafeteria', reportedBy: 'Rosa Aquino', date: '2026-03-21', image: '', claimCode: 'FI-GB08-LMNO', createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
   { id: 'item_009', title: 'Student ID', category: 'documents', description: 'Student ID for Miguel Bautista, 2nd year IT.', status: 'found', location: 'Library', reportedBy: 'Staff', date: '2026-03-20', image: '', claimCode: 'FI-ID09-PQRS', createdAt: new Date(Date.now() - 3600000 * 72).toISOString() },
-  { id: 'item_010', title: 'Backpack', category: 'bags', description: 'Black Jansport backpack, has keychain ornament.', status: 'pending', location: 'Gym', reportedBy: 'Roberto Cruz', date: '2026-03-29', image: '', claimCode: 'FI-BP10-UVWX', createdAt: new Date(Date.now() - 3600000 * 1).toISOString() },
+  { id: 'item_010', title: 'Backpack', category: 'bags', description: 'Black Jansport backpack, has keychain ornament.', status: 'lost', location: 'Gym', reportedBy: 'Roberto Cruz', date: '2026-03-29', image: '', claimCode: 'FI-BP10-UVWX', createdAt: new Date(Date.now() - 3600000 * 1).toISOString() },
 ];
 
 const DEFAULT_USERS = [
@@ -118,7 +128,12 @@ const Store = {
   },
   clear() {
     Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
-    this.init();
+    this.set(STORAGE_KEYS.POSTS, []);
+    this.set(STORAGE_KEYS.USERS, []);
+    this.set(STORAGE_KEYS.REPORTS, []);
+    this.set(STORAGE_KEYS.LOGS, []);
+    this.set(STORAGE_KEYS.NOTIFICATIONS, []);
+    this.set(STORAGE_KEYS.LOCATIONS, DEFAULT_LOCATIONS);
   },
 };
 
@@ -130,7 +145,7 @@ const Toast = {
   show(msg, type = 'success', icon = '') {
     if (!this.el) return;
     const icons = { success: 'ri-checkbox-circle-line', error: 'ri-close-circle-line', info: 'ri-information-line' };
-    this.el.innerHTML = `<i class="${icons[type] || icons.success}"></i><span>${msg}</span>`;
+    this.el.innerHTML = `<i class="${icons[type] || icons.success}"></i><span>${esc(msg)}</span>`;
     this.el.className = `toast ${type} show`;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => { this.el.className = 'toast'; }, 3200);
@@ -174,11 +189,48 @@ const Notifications = {
       <li class="notif-item">
         <div class="notif-icon ${n.type}"><i class="${icons[n.type] || 'ri-bell-line'}"></i></div>
         <div>
-          <div class="notif-text">${n.msg}</div>
+          <div class="notif-text">${esc(n.msg)}</div>
           <div class="notif-time">${timeAgo(n.timestamp)}</div>
         </div>
       </li>
     `).join('');
+  }
+};
+
+// ============ SESSION LOCK ============
+const AdminSession = {
+  init() {
+    if (sessionStorage.getItem(SESSION_KEY) === null) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+    }
+    if (!this.isActive()) this.showLock();
+  },
+
+  isActive() {
+    return sessionStorage.getItem(SESSION_KEY) !== '0';
+  },
+
+  activate() {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    this.hideLock();
+    Toast.show('Admin session restored', 'success');
+  },
+
+  logout() {
+    App.confirm('Logout', 'End the current admin session?', () => {
+      sessionStorage.setItem(SESSION_KEY, '0');
+      document.getElementById('notifPanel').classList.remove('open');
+      this.showLock();
+      Toast.show('Logged out', 'info');
+    });
+  },
+
+  showLock() {
+    document.getElementById('sessionScreen')?.removeAttribute('hidden');
+  },
+
+  hideLock() {
+    document.getElementById('sessionScreen')?.setAttribute('hidden', '');
   }
 };
 
@@ -190,6 +242,8 @@ const App = {
   init() {
     Store.init();
     Toast.init();
+    this.migrateLegacyData();
+    AdminSession.init();
     this.bindSidebar();
     this.bindNavLinks();
     this.bindNotifBtn();
@@ -198,6 +252,10 @@ const App = {
     Notifications.updateDot();
     Notifications.renderList();
     this.populateLocationDropdown();
+  },
+
+  migrateLegacyData() {
+    Store.set(STORAGE_KEYS.POSTS, normalizePosts(Store.get(STORAGE_KEYS.POSTS, DEFAULT_POSTS)));
   },
 
   bindSidebar() {
@@ -228,14 +286,13 @@ const App = {
     });
     const sectionEl = document.getElementById(`section-${section}`);
     if (sectionEl) sectionEl.classList.add('active');
-    const titles = { dashboard: 'Dashboard', posts: 'Posts', users: 'Users', reports: 'Reports', logs: 'Activity Logs', settings: 'Settings' };
+    const titles = { dashboard: 'Dashboard', posts: 'Posts', users: 'Users', reports: 'Reports', settings: 'Settings' };
     document.getElementById('topbarTitle').textContent = titles[section] || section;
 
     if (section === 'dashboard') Dashboard.render();
     if (section === 'posts') PostsManager.render();
     if (section === 'users') UsersManager.render();
     if (section === 'reports') ReportsManager.render();
-    if (section === 'logs') LogsManager.render();
     if (section === 'settings') Settings.render();
 
     if (window.innerWidth <= 900) document.getElementById('sidebar').classList.remove('open');
@@ -309,7 +366,7 @@ const App = {
         sel.innerHTML = '<option value="">Select location</option>';
       }
       locs.forEach(loc => {
-        sel.innerHTML += `<option value="${loc}">${loc}</option>`;
+        sel.innerHTML += `<option value="${esc(loc)}">${esc(loc)}</option>`;
       });
       if (val) sel.value = val;
     });
@@ -563,6 +620,7 @@ const PostsManager = {
     document.getElementById('postModalTitle').textContent = 'Add New Post';
     document.getElementById('postForm').reset();
     document.getElementById('pId').value = '';
+    document.getElementById('pStatus').value = 'lost';
     document.getElementById('pDate').value = new Date().toISOString().slice(0, 10);
     App.populateLocationDropdown();
     document.getElementById('postModal').style.display = 'flex';
@@ -680,7 +738,6 @@ const PostsManager = {
         <button class="btn-primary btn-sm" onclick="PostsManager.closeViewModal(); PostsManager.openEditModal('${p.id}')"><i class="ri-edit-line"></i> Edit Post</button>
         <button class="btn-outline btn-sm" onclick="PostsManager.closeViewModal(); PostsManager.markStatus('${p.id}','found')"><i class="ri-map-pin-line"></i> Mark Found</button>
         <button class="btn-outline btn-sm" onclick="PostsManager.closeViewModal(); PostsManager.markStatus('${p.id}','claimed')"><i class="ri-checkbox-circle-line"></i> Mark Claimed</button>
-        <button class="btn-outline btn-sm" onclick="PostsManager.closeViewModal(); PostsManager.markStatus('${p.id}','pending')"><i class="ri-time-line"></i> Mark Pending</button>
         <button class="btn-danger btn-sm" onclick="PostsManager.closeViewModal(); PostsManager.deletePost('${p.id}')"><i class="ri-delete-bin-line"></i> Delete</button>
       </div>
     `;
@@ -689,6 +746,21 @@ const PostsManager = {
 
   closeViewModal() {
     document.getElementById('viewPostModal').style.display = 'none';
+  },
+
+  openClaimCodeModal() {
+    const input = document.getElementById('claimCodeInput');
+    const result = document.getElementById('claimResult');
+    if (input) input.value = '';
+    if (result) {
+      result.className = 'claim-result';
+      result.innerHTML = '';
+    }
+    document.getElementById('claimCodeModal').style.display = 'flex';
+  },
+
+  closeClaimCodeModal() {
+    document.getElementById('claimCodeModal').style.display = 'none';
   }
 };
 
@@ -937,6 +1009,7 @@ const Settings = {
     Store.set(STORAGE_KEYS.POSTS, posts);
     AuditLog.add(`Marked "${post?.title}" as claimed via code verification`, `Code: ${code}`, 'verify');
     Dashboard.render();
+    PostsManager.render();
     document.getElementById('claimResult').innerHTML = `<strong>✓ Item successfully marked as claimed!</strong>`;
     document.getElementById('claimCodeInput').value = '';
     Toast.show(`"${post?.title}" marked as claimed`, 'success');
@@ -960,6 +1033,8 @@ const Settings = {
       Dashboard.render();
       App.updateBadges();
       App.populateLocationDropdown();
+      Notifications.updateDot();
+      Notifications.renderList();
       Toast.show('All data cleared', 'error');
     });
   },
