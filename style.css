@@ -1171,7 +1171,7 @@ input, select, textarea { font-family: var(--font-body); font-size: 14px; }
   text-transform: uppercase;
   border-radius: 2px;
 }
-.report-status.pending { background: var(--lost-bg); color: var(--lost-color); }
+.report-status.open { background: var(--lost-bg); color: var(--lost-color); }
 .report-status.resolved { background: var(--found-bg); color: var(--found-color); }
 .report-status.ignored { background: var(--cream); color: var(--warm-gray); }
 

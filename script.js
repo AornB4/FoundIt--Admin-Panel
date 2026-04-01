@@ -66,6 +66,14 @@ function normalizePosts(posts = []) {
   return posts.map(post => ({ ...post, status: normalizePostStatus(post.status) }));
 }
 
+function normalizeReportStatus(status) {
+  return status === 'pending' ? 'open' : (status || 'open');
+}
+
+function normalizeReports(reports = []) {
+  return reports.map(report => ({ ...report, status: normalizeReportStatus(report.status) }));
+}
+
 // Default dummy data
 const DEFAULT_POSTS = [
   { id: 'item_001', title: 'Lost Keys', category: 'keys', description: 'Silver key ring with a blue keychain. Found near the main entrance.', status: 'lost', location: 'MPG Building', reportedBy: 'Juan Dela Cruz', date: '2026-03-28', image: '', claimCode: 'FI-XKBD-7N2P', createdAt: new Date(Date.now() - 3600000 * 2).toISOString() },
@@ -256,6 +264,7 @@ const App = {
 
   migrateLegacyData() {
     Store.set(STORAGE_KEYS.POSTS, normalizePosts(Store.get(STORAGE_KEYS.POSTS, DEFAULT_POSTS)));
+    Store.set(STORAGE_KEYS.REPORTS, normalizeReports(Store.get(STORAGE_KEYS.REPORTS, DEFAULT_REPORTS)));
   },
 
   bindSidebar() {
@@ -349,7 +358,7 @@ const App = {
 
   updateBadges() {
     const posts = Store.get(STORAGE_KEYS.POSTS);
-    const reports = Store.get(STORAGE_KEYS.REPORTS).filter(r => r.status === 'pending');
+    const reports = Store.get(STORAGE_KEYS.REPORTS).filter(r => r.status === 'open');
     document.getElementById('nav-badge-posts').textContent = posts.length;
     document.getElementById('nav-badge-reports').textContent = reports.length;
   },
@@ -891,7 +900,7 @@ const ReportsManager = {
         <td><span class="report-status ${r.status}">${capitalize(r.status)}</span></td>
         <td>
           <div class="action-btns">
-            ${r.status === 'pending' ? `
+            ${r.status === 'open' ? `
               <button class="btn-icon success" title="Resolve" onclick="ReportsManager.setStatus('${r.id}','resolved')"><i class="ri-checkbox-circle-line"></i></button>
               <button class="btn-icon" title="Ignore" onclick="ReportsManager.setStatus('${r.id}','ignored')"><i class="ri-eye-off-line"></i></button>
               <button class="btn-icon danger" title="Delete Post" onclick="ReportsManager.deleteReportedPost('${r.id}','${r.postId}')"><i class="ri-delete-bin-line"></i></button>
@@ -1018,6 +1027,7 @@ const Settings = {
   resetData() {
     App.confirm('Reset Data', 'This will restore all default dummy data. Continue?', () => {
       Store.reset();
+      Store.set(STORAGE_KEYS.REPORTS, normalizeReports(Store.get(STORAGE_KEYS.REPORTS, DEFAULT_REPORTS)));
       Dashboard.render();
       App.updateBadges();
       App.populateLocationDropdown();
@@ -1030,6 +1040,7 @@ const Settings = {
   clearAllData() {
     App.confirm('Clear All Data', 'This will permanently delete ALL posts, users, reports and logs. Are you sure?', () => {
       Store.clear();
+      Store.set(STORAGE_KEYS.REPORTS, normalizeReports(Store.get(STORAGE_KEYS.REPORTS, [])));
       Dashboard.render();
       App.updateBadges();
       App.populateLocationDropdown();
